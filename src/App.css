@@ -647,6 +647,82 @@
 /* ===========================
    RESPONSIVE
 =========================== */
+/* ===========================
+   PAGINATION
+=========================== */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 48px;
+  padding-bottom: 16px;
+}
+
+.page-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.18s, color 0.18s;
+}
+
+.page-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+}
+
+.page-btn:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.page-info {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.45);
+  min-width: 110px;
+  text-align: center;
+}
+
+.page-info strong {
+  color: #fff;
+}
+
+/* ===========================
+   EVOLUTION (modal)
+=========================== */
+.modal-evolution {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.evo-tag {
+  display: inline-block;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.evo-final {
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(255, 255, 255, 0.4);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.evo-level {
+  background: rgba(255, 255, 255, 0.06);
+}
+
 @media (max-width: 700px) {
   .header {
     padding: 14px 20px;

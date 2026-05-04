@@ -1,12 +1,76 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { TYPE_COLORS, TYPE_NAMES_FR, STAT_NAMES_FR, getImage } from '../utils';
 
+function getEvolutionLabel(details) {
+  if (!details) return 'Peut évoluer';
+  if (details.min_level) return `Niveau ${details.min_level}`;
+  if (details.trigger?.name === 'trade') return 'Par échange';
+  if (details.trigger?.name === 'use-item') {
+    const item = details.item?.name?.replace(/-/g, ' ') || 'objet';
+    return `Pierre : ${item}`;
+  }
+  if (details.trigger?.name === 'level-up') {
+    if (details.min_happiness) return 'Par bonheur';
+    if (details.min_affection) return 'Par affection';
+    return 'Montée de niveau';
+  }
+  return 'Peut évoluer';
+}
+
+function findInChain(chain, speciesName) {
+  if (chain.species.name === speciesName) return chain;
+  for (const next of chain.evolves_to) {
+    const found = findInChain(next, speciesName);
+    if (found) return found;
+  }
+  return null;
+}
+
 function PokemonModal({ pokemon, onClose }) {
+  const [frenchName, setFrenchName] = useState(null);
+  const [evolutionInfo, setEvolutionInfo] = useState(null);
+
   useEffect(() => {
     const handleKey = (e) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
   }, [onClose]);
+
+  useEffect(() => {
+    if (pokemon.error || !pokemon.species?.url) return;
+    let cancelled = false;
+
+    (async () => {
+      try {
+        const speciesData = await fetch(pokemon.species.url).then(r => r.json());
+        if (cancelled) return;
+
+        const frEntry = speciesData.names?.find(n => n.language.name === 'fr');
+        if (frEntry) setFrenchName(frEntry.name);
+
+        const chainData = await fetch(speciesData.evolution_chain.url).then(r => r.json());
+        if (cancelled) return;
+
+        const node = findInChain(chainData.chain, speciesData.name);
+        if (!node) return;
+
+        if (node.evolves_to.length === 0) {
+          setEvolutionInfo({ type: 'final' });
+        } else {
+          const nextEvo = node.evolves_to[0];
+          const details = nextEvo.evolution_details[0] ?? null;
+          setEvolutionInfo({
+            type: 'evolves',
+            label: getEvolutionLabel(details),
+          });
+        }
+      } catch {
+        // silent fail — evolution info is optional
+      }
+    })();
+
+    return () => { cancelled = true; };
+  }, [pokemon]);
 
   if (pokemon.error) {
     return (
@@ -27,6 +91,7 @@ function PokemonModal({ pokemon, onClose }) {
   const typeColor = TYPE_COLORS[mainType] || '#888';
   const image = getImage(pokemon);
   const totalStats = pokemon.stats.reduce((acc, s) => acc + s.base_stat, 0);
+  const displayName = frenchName || pokemon.displayName;
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -40,7 +105,7 @@ function PokemonModal({ pokemon, onClose }) {
         <div className="modal-banner">
           <div className="modal-banner-bg" />
           {image ? (
-            <img src={image} alt={pokemon.displayName} className="modal-image" />
+            <img src={image} alt={displayName} className="modal-image" />
           ) : (
             <div className="modal-image-placeholder">?</div>
           )}
@@ -49,7 +114,7 @@ function PokemonModal({ pokemon, onClose }) {
         <div className="modal-content">
           <div className="modal-header">
             <span className="modal-number">#{String(pokemon.id).padStart(4, '0')}</span>
-            <h2 className="modal-name">{pokemon.displayName}</h2>
+            <h2 className="modal-name">{displayName}</h2>
             <div className="modal-types">
               {pokemon.types.map((t) => (
                 <span
@@ -91,6 +156,23 @@ function PokemonModal({ pokemon, onClose }) {
                   ))}
                 </div>
               </div>
+
+              {evolutionInfo && evolutionInfo.type !== 'unknown' && (
+                <div className="modal-evolution">
+                  <h4 className="section-label">Évolution</h4>
+                  {evolutionInfo.type === 'final' && (
+                    <span className="evo-tag evo-final">Forme finale</span>
+                  )}
+                  {evolutionInfo.type === 'evolves' && (
+                    <span
+                      className="evo-tag evo-level"
+                      style={{ color: typeColor, borderColor: `${typeColor}55` }}
+                    >
+                      {evolutionInfo.label}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="modal-right">
